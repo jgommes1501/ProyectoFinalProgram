@@ -2,6 +2,7 @@ package Tema8;
 
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -13,7 +14,7 @@ public class juego {
         BDManager bd = null;
         try {
             System.out.println("¡Bienvenido al Space Invaders!");
-            System.out.println("Introduce tu nombre: ");
+            System.out.print("Introduce tu nombre: ");
             String nombre = sc.nextLine();
 
             bd = new BDManager();
@@ -27,7 +28,6 @@ public class juego {
             }
 
             Jugador jugador = new Jugador(nombre);
-
             Nave nave = new Nave();
             ArrayList<Meteoro> meteoros = new ArrayList<>();
 
@@ -36,11 +36,13 @@ public class juego {
                     meteoros.add(new Meteoro(rand.nextInt(10), 0));
                 }
 
-                for (Meteoro meteoro : new ArrayList<>(meteoros)) {
+                Iterator<Meteoro> it = meteoros.iterator();
+                while (it.hasNext()) {
+                    Meteoro meteoro = it.next();
                     meteoro.mover();
                     if (meteoro.getX() == nave.getX() && meteoro.getY() == nave.getY()) {
                         jugador.perderVida();
-                        meteoros.remove(meteoro);
+                        it.remove();
                         System.out.println("¡Impacto! Has perdido una vida.");
                     }
                 }
@@ -63,9 +65,9 @@ public class juego {
                         case 3: nave.moverArriba(); break;
                         case 4: nave.moverAbajo(); break;
                         case 5:
-                            if (rand.nextInt(100) < 30) { // 30% de probabilidad de acertar
+                            if (rand.nextInt(100) < 30) {
                                 jugador.ganarPuntos(100);
-                                System.out.println("¡Disparo acertado! +100 puntos.");
+                                System.out.printf("¡Disparo acertado! +%d puntos.%n", 100);
                             } else {
                                 System.out.println("¡Disparo fallido!");
                             }
@@ -74,19 +76,22 @@ public class juego {
                             System.out.println("Opción inválida.");
                     }
                 } catch (NaveException e) {
-                    System.out.println("Error: " + e.getMessage());
+                    System.out.printf("Error: %s%n", e.getMessage());
                 }
 
-                // Actualizar estado en BD cada ciclo
-                bd.actualizarJugador(jugadorId, jugador.getPuntos(), jugador.getVidas(),
-                        jugador.haGanado() ? "ganado" : jugador.haPerdido() ? "perdido" : "jugando");
+                bd.actualizarJugador(
+                    jugadorId,
+                    jugador.getPuntos(),
+                    jugador.getVidas(),
+                    jugador.haGanado() ? "ganado" : jugador.haPerdido() ? "perdido" : "jugando"
+                );
             }
 
             if (jugador.haGanado()) {
-                System.out.println("¡Felicidades, " + jugador.getNombre() + "! Has ganado.");
+                System.out.printf("¡Felicidades, %s! Has ganado.%n", jugador.getNombre());
                 bd.guardarPartida(jugadorId, jugador.getPuntos(), "ganado");
             } else {
-                System.out.println("¡Lo siento, " + jugador.getNombre() + "! Has perdido.");
+                System.out.printf("¡Lo siento, %s! Has perdido.%n", jugador.getNombre());
                 bd.guardarPartida(jugadorId, jugador.getPuntos(), "perdido");
             }
 
@@ -95,7 +100,7 @@ public class juego {
         } catch (ConcurrentModificationException e) {
             System.out.println("Error al modificar la lista de meteoros.");
         } catch (Exception e) {
-            System.out.println("Ha ocurrido un error inesperado: " + e.getMessage());
+            System.out.printf("Ha ocurrido un error inesperado: %s%n", e.getMessage());
             e.printStackTrace();
         } finally {
             if (bd != null) {
